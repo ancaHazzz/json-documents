@@ -12,6 +12,6 @@ export class DocumentVersion {
   changeDate: Date
 
   @Column('json')
-  content: Object
+  content: string
 
 }

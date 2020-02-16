@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express'
 import bodyParser from 'body-parser'
-import { storeDocument } from './controller/DocumentManager'
+import { storeDocument, getDocumentVersion, getDocumentHistory } from './controller/DocumentManager'
 import { createConnection } from 'typeorm'
 import moment from 'moment'
 
@@ -20,21 +20,66 @@ initApp().then(app => {
   POST /document:
     -- changeDate: optional date for this version of the document
     -- documentId: string identifying the document
-    -- document: JSON content of the document`)
+    -- document: JSON content of the document
+  GET /documentHistory:
+    -- documentId
+  GET /document:
+    -- documentId
+    -- `)
   })
 
   app.post('/document', async (req: Request, res: Response) => {
     try {
-      if (!req.body) {
-        // TODO: validation
-        res.status(400).json({
-          error: `You must provide changeDate, documentId, document`
-        })
-        return
+      if (!req.body || !req.body.changeDate || !req.body.documentId || !req.body.document) {
+        return res.status(400).json({ error: `You must provide changeDate, documentId, document` })
       }
-      let result = await storeDocument(moment(req.body.date), req.body.documentId, req.body.document)
+      const date = moment(req.body.changeDate)
+      if (!date) {
+        return res.status(400).json({ error: `Unrecognized date format for changeDate param` })
+      }
+      if (!JSON.stringify(req.body.document)) {
+        return res.status(400).json({ error: `Unrecognized json format for document param` })
+      }
+      let result = await storeDocument(date.toDate(), req.body.documentId, req.body.document)
       res.send({ success: result })
     } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: error.toString() })
+    }
+  })
+
+  app.get('/document/:documentId', async (req: Request, res: Response) => {
+    try {
+      if (!req.params.documentId) {
+        return res.status(400).json({ error: `You must provide a documentId` })
+      }
+      let result = await getDocumentHistory(req.params.documentId)
+      if (!result) {
+        return res.status(404).json()
+      }
+      res.send(result)
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: error.toString() })
+    }
+        })
+
+  app.get('/document/:documentId/:version', async (req: Request, res: Response) => {
+    try {
+      if (!req.params.documentId || !req.params.version) {
+        return res.status(400).json({ error: `You must provide documentId & changeDate` })
+      }
+      const date = moment(req.params.version)
+      if (!date) {
+        return res.status(400).json({ error: `Unrecognized date format for changeDate param` })
+      }
+      const result = await getDocumentVersion(req.params.documentId, date.toDate())
+      if (!result) {
+        return res.status(404).json()
+      }
+      res.send(result)
+    } catch (error) {
+      console.error(error)
       res.status(500).json({ error: error.toString() })
     }
   })
