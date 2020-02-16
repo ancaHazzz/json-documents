@@ -7,8 +7,11 @@ export class DocumentVersion {
   @JoinColumn({name: 'document_index'})
   @PrimaryColumn('int', { name: 'document_index' })
   document: Document
+
+  @PrimaryColumn('int')
+  version: number
   
-  @PrimaryColumn('datetime', { name: 'change_date' })
+  @Column('datetime', { name: 'change_date' })
   changeDate: Date
 
   @Column('json')

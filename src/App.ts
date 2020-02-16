@@ -21,11 +21,8 @@ initApp().then(app => {
     -- changeDate: optional date for this version of the document
     -- documentId: string identifying the document
     -- document: JSON content of the document
-  GET /documentHistory:
-    -- documentId
-  GET /document:
-    -- documentId
-    -- `)
+  GET /document/{documentId}
+  GET /document/{documentId}/{changeDate}`)
   })
 
   app.post('/document', async (req: Request, res: Response) => {
@@ -34,14 +31,14 @@ initApp().then(app => {
         return res.status(400).json({ error: `You must provide changeDate, documentId, document` })
       }
       const date = moment(req.body.changeDate)
-      if (!date) {
+      if (!date.isValid()) {
         return res.status(400).json({ error: `Unrecognized date format for changeDate param` })
       }
       if (!JSON.stringify(req.body.document)) {
         return res.status(400).json({ error: `Unrecognized json format for document param` })
       }
       let result = await storeDocument(date.toDate(), req.body.documentId, req.body.document)
-      res.send({ success: result })
+      res.send({ version: result })
     } catch (error) {
       console.error(error)
       res.status(500).json({ error: error.toString() })
@@ -69,11 +66,25 @@ initApp().then(app => {
       if (!req.params.documentId || !req.params.version) {
         return res.status(400).json({ error: `You must provide documentId & changeDate` })
       }
-      const date = moment(req.params.version)
-      if (!date) {
-        return res.status(400).json({ error: `Unrecognized date format for changeDate param` })
+
+      const result = await getDocumentVersion(req.params.documentId, req.params.version)
+      if (!result) {
+        return res.status(404).json()
       }
-      const result = await getDocumentVersion(req.params.documentId, date.toDate())
+      res.send(result)
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: error.toString() })
+    }
+  })
+
+  app.get('/document/:documentId/compare', async (req: Request, res: Response) => {
+    try {
+      if (!req.params.documentId || !req.params.version) {
+        return res.status(400).json({ error: `You must provide documentId & 2 versions` })
+      }
+
+      const result = await getDocumentVersion(req.params.documentId, req.params.version)
       if (!result) {
         return res.status(404).json()
       }

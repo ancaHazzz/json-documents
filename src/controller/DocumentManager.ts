@@ -9,19 +9,20 @@ export async function storeDocument(date: Date, documentId: string, newContent: 
       document = new Document()
       document.documentId = documentId
       document.lastChangeDate = date
-      console.debug('doc to save:', document)
       document = await getManager().save(document)
     }
+    const docVersions = await getManager().count(DocumentVersion, {
+      where: { document: { index: document.index } }
+    })
     const docUpdate = new DocumentVersion()
     docUpdate.changeDate = date
     docUpdate.document = document
+    docUpdate.version = +docVersions
     docUpdate.content = newContent
-    console.debug('docUpdate to save:', document)
-    await getManager().save(docUpdate)
-    return true
+    const resp = await getManager().save(docUpdate)
+    return resp.version
   } catch (err) {
     console.error(err)
-    return false
   }
 }
 
@@ -33,11 +34,28 @@ export async function getDocumentHistory(documentId: string) {
   return document?.versions
 }
 
-export async function getDocumentVersion(documentId: string, date: Date) {
+export async function getDocumentVersion(documentId: string, version: string) {
   return await createQueryBuilder('DocumentVersion')
     .select('DocumentVersion.content')
     .innerJoin('DocumentVersion.document', 'document')
     .where('document.documentId = :documentId', { documentId })
-    .andWhere('DocumentVersion.changeDate = :changeDate', { changeDate: date })
+    .andWhere('DocumentVersion.version = :version', { version })
     .getOne()
+}
+
+export async function compareContents(oldContent: any, newContent: any) {
+  if (!oldContent || !newContent) {
+    return oldContent || newContent
+  }
+  const jsonDoc = JSON.parse(oldContent)
+  for (const prop in jsonDoc) {
+    if (Object.prototype.hasOwnProperty.call(jsonDoc, prop)) {
+      const newPropValue = newContent[prop]
+      if (newPropValue === jsonDoc[prop]) {
+        console.debug(`${prop}: same value`)
+        continue
+      }
+      console.debug(`${prop}: ${jsonDoc[prop]} -> ${newContent[prop]}`)
+    }
+  }
 }
