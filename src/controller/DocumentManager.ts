@@ -40,22 +40,29 @@ export async function getDocumentVersion(documentId: string, version: string) {
     .innerJoin('DocumentVersion.document', 'document')
     .where('document.documentId = :documentId', { documentId })
     .andWhere('DocumentVersion.version = :version', { version })
-    .getOne()
+    .getOne() as DocumentVersion
 }
 
-export async function compareContents(oldContent: any, newContent: any) {
-  if (!oldContent || !newContent) {
-    return oldContent || newContent
+export function compareContents(content1: any, content2: any) {
+  if (!content1 || !content2) {
+    return content1 || content2
   }
-  const jsonDoc = JSON.parse(oldContent)
-  for (const prop in jsonDoc) {
-    if (Object.prototype.hasOwnProperty.call(jsonDoc, prop)) {
-      const newPropValue = newContent[prop]
-      if (newPropValue === jsonDoc[prop]) {
-        console.debug(`${prop}: same value`)
-        continue
+  const comparison = []
+  for (const prop in content1) {
+    if (Object.prototype.hasOwnProperty.call(content1, prop)) {
+      if (!content2[prop]) {
+        comparison.push(`${prop} - ${content1[prop]} -> deleted`)
+      } else {
+        comparison.push(`${prop} - ${content1[prop]} -> ${content2[prop]}`)
       }
-      console.debug(`${prop}: ${jsonDoc[prop]} -> ${newContent[prop]}`)
     }
   }
+  for (const prop in content2) {
+    if (Object.prototype.hasOwnProperty.call(content2, prop)) {
+      if (!content1[prop]) {
+        comparison.push(`new property - ${prop}: ${content2[prop]}`)
+      }
+    }
+  }
+  return comparison.join('\r\n')
 }

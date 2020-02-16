@@ -3,7 +3,7 @@ import { Document } from './Document'
 
 @Entity()
 export class DocumentVersion {
-  @ManyToOne(() => Document)
+  @ManyToOne(() => Document, document => document.versions)
   @JoinColumn({name: 'document_index'})
   @PrimaryColumn('int', { name: 'document_index' })
   document: Document

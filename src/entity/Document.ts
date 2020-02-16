@@ -17,5 +17,5 @@ export class Document {
   lastChangeDate: Date
 
   @OneToMany(() => DocumentVersion, version => version.document)
-  versions: DocumentVersion
+  versions: DocumentVersion[]
 }
