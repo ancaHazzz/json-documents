@@ -1,13 +1,13 @@
 import express, { Request, Response } from 'express'
 import bodyParser from 'body-parser'
 import { storeDocument, getDocumentVersion, getDocumentHistory, compareContents } from './controller/DocumentManager'
-import { createConnection } from 'typeorm'
+import * as Database from './service/Database'
 import moment from 'moment'
 
 const PORT = process.env.PORT || 3000
 
-async function initApp() {
-  await createConnection()
+export async function initApp() {
+  await Database.init()
   const app = express()
   app.use(bodyParser.json())
   app.use(bodyParser.urlencoded({ extended: true }))
