@@ -33,6 +33,6 @@
       "mysql": "^2.14.1",
       "reflect-metadata": "^0.1.10",
       "ts-jest": "^25.2.1",
-      "typeorm": "0.2.22"
+      "typeorm": "0.2.25"
    }
 }
